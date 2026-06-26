@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOALKEEPER'S POV: Morning Tactical Shootout</title>
+    
+    <!-- Google Fonts: Orbitron (HUD), Rajdhani (Tech labels), Share Tech Mono (Monospaced metrics) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for futuristic icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js CDN for 3D graphics pipeline -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- MediaPipe Hands Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        
+        <!-- ================= Screen A: Landing Page & Role Selection ================= -->
+        <section id="menu-screen" class="screen-container active">
+            <div class="blueprint-grid"></div>
+            
+            <div class="menu-content">
+                <!-- Title Header -->
+                <header class="title-header">
+                    <h1 class="glowing-neon-title" data-text="GOALKEEPER'S POV">GOALKEEPER'S POV</h1>
+                    <div class="title-subtitle">3D TACTICAL TELEMETRY SIMULATOR v3.5</div>
+                </header>
+
+                <!-- Initial Main Menu Stack -->
+                <div id="main-menu-stack" class="button-stack active">
+                    <button id="singleplayer-btn" class="menu-btn primary-neon-btn">
+                        <span class="btn-glow-bar"></span>
+                        <i class="fa-solid fa-gamepad btn-icon"></i>
+                        <span class="btn-text">SINGLE PLAYER</span>
+                    </button>
+                    
+                    <div class="locked-btn-wrapper">
+                        <button id="multiplayer-btn" class="menu-btn locked-btn" disabled>
+                            <i class="fa-solid fa-lock btn-icon"></i>
+                            <span class="btn-text">MULTIPLAYER</span>
+                        </button>
+                        <div class="locked-tooltip">Multiplayer Mode Locked</div>
+                    </div>
+                </div>
+
+                <!-- Role Selection Step (inside single player) -->
+                <div id="role-selection-stack" class="button-stack hidden">
+                    <h2 class="section-label"><i class="fa-solid fa-shield-halved"></i> SELECT ROLE</h2>
+                    
+                    <button id="role-goalie-btn" class="menu-btn goalie-neon-btn">
+                        <span class="btn-glow-bar"></span>
+                        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%2322c55e'><path d='M256 0c-35.3 0-64 28.7-64 64v192c0 35.3 28.7 64 64 64s64-28.7 64-64V64c0-35.3-28.7-64-64-64zm-96 160c0-17.7-14.3-32-32-32s-32 14.3-32 32v128c0 33.4 17.2 62.7 43 80c-7.7 8.2-11 19.3-8.8 30.5l16 80c2.8 14.2 15.3 24.5 29.8 24.5h160c14.5 0 27-10.3 29.8-24.5l16-80c2.2-11.2-1.1-22.3-8.8-30.5 25.8-17.3 43-46.6 43-80V160c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32s-32-14.3-32-32v-96z'/></svg>" class="btn-svg-icon" alt="Gloves">
+                        <span class="btn-text">GOALIE</span>
+                    </button>
+                    
+                    <button id="role-taker-btn" class="menu-btn taker-neon-btn">
+                        <span class="btn-glow-bar"></span>
+                        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%23ef4444'><path d='M224 96a32 32 0 1 0-64 0 32 32 0 1 0 64 0zM128 288c0 17.7 14.3 32 32 32h16c17.7 0 32-14.3 32-32v-64h16v64c0 17.7 14.3 32 32 32h16c17.7 0 32-14.3 32-32V144c0-26.5-21.5-48-48-48h-64c-26.5 0-48 21.5-48 48v144zm128 96a48 48 0 1 0 0-96 48 48 0 1 0 0 96z'/></svg>" class="btn-svg-icon" alt="Kick">
+                        <span class="btn-text">PENALTY TAKER</span>
+                    </button>
+
+                    <button id="role-back-btn" class="back-btn">
+                        <i class="fa-solid fa-arrow-left"></i> BACK
+                    </button>
+                </div>
+            </div>
+            
+            <div class="version-tag">3D ENGINE v3.5 // MORNING_EDITION</div>
+        </section>
+
+        <!-- ================= Screen B: Gameplay Arena ================= -->
+        <section id="gameplay-screen" class="screen-container hidden">
+            
+            <!-- Sleek Top Header HUD Panel -->
+            <header id="telemetry-hud">
+                <div class="hud-left">
+                    <span class="hud-logo-text">GOALKEEPER VIEW</span>
+                    <span class="hud-sub-label">ANALYZE. ANTICIPATE. PROTECT.</span>
+                </div>
+                
+                <div class="hud-center">
+                    <div class="telemetry-box">
+                        <span class="tel-label">POSITION</span>
+                        <span class="tel-value" id="tel-val-pos">GK</span>
+                    </div>
+                    <div class="telemetry-box">
+                        <span class="tel-label">FOCUS</span>
+                        <span class="tel-value" id="tel-val-focus">3D SHOT STOPPING</span>
+                    </div>
+                    <div class="telemetry-box highlight-orange">
+                        <span class="tel-label">DIFFICULTY</span>
+                        <span class="tel-value" id="tel-val-diff">LEVEL 1</span>
+                    </div>
+                    <div class="telemetry-box highlight">
+                        <span class="tel-label">ATTEMPTS</span>
+                        <span class="tel-value" id="tel-val-attempts">0 / 7</span>
+                    </div>
+                    <div class="telemetry-box highlight-green">
+                        <span class="tel-label">SAVES</span>
+                        <span class="tel-value" id="tel-val-saves">0</span>
+                    </div>
+                </div>
+                
+                <div class="hud-right">
+                    <div class="training-dropdown">
+                        <span class="dropdown-label">MODE:</span>
+                        <span class="dropdown-value">TRAINING <i class="fa-solid fa-caret-down"></i></span>
+                        <ul class="dropdown-menu">
+                            <li class="active">TRAINING</li>
+                            <li class="locked">CHALLENGE <i class="fa-solid fa-lock"></i></li>
+                        </ul>
+                    </div>
+                    
+                    <button id="game-mute-btn" class="hud-control-btn" title="Toggle Sound">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                    <button id="game-back-to-menu-btn" class="hud-control-btn" title="Exit to Main Menu">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Three.js 3D Field Viewport -->
+            <div id="pitch-viewport">
+                <!-- 3D Canvas rendering engine -->
+                <canvas id="three-canvas"></canvas>
+                
+                <!-- Floating Minimalist Level HUD Badge (Bottom-Left Corner) -->
+                <div id="level-hud-badge" class="level-indicator-badge">LEVEL 1</div>
+                
+                <!-- Floating Holographic Goal overlay Grid (Positioned in 3D Screen Space) -->
+                <div id="goal-sectors-overlay">
+                    <!-- TOP ROW -->
+                    <div class="goal-sector" id="sector-top-left" data-sector="top-left">
+                        <div class="sector-crosshair"></div>
+                        <span class="sector-label">TOP LEFT</span>
+                    </div>
+                    <div class="goal-sector" id="sector-top-center" data-sector="top-center">
+                        <div class="sector-crosshair"></div>
+                        <span class="sector-label">TOP CENTER</span>
+                    </div>
+                    <div class="goal-sector" id="sector-top-right" data-sector="top-right">
+                        <div class="sector-crosshair"></div>
+                        <span class="sector-label">TOP RIGHT</span>
+                    </div>
+                    
+                    <!-- BOTTOM ROW -->
+                    <div class="goal-sector" id="sector-bottom-left" data-sector="bottom-left">
+                        <div class="sector-crosshair"></div>
+                        <span class="sector-label">BOTTOM LEFT</span>
+                    </div>
+                    <div class="goal-sector" id="sector-bottom-center" data-sector="bottom-center">
+                        <div class="sector-crosshair"></div>
+                        <span class="sector-label">BOTTOM CENTER</span>
+                    </div>
+                    <div class="goal-sector" id="sector-bottom-right" data-sector="bottom-right">
+                        <div class="sector-crosshair"></div>
+                        <span class="sector-label">BOTTOM RIGHT</span>
+                    </div>
+                </div>
+
+                <!-- Toast and countdowns -->
+                <div id="action-toast" class="toast-hidden">SAVE!</div>
+                <div id="round-countdown" class="countdown-hidden">3</div>
+            </div>
+
+            <!-- Webcam Radar Box overlay (upper right) -->
+            <section id="webcam-radar-container" class="telemetry-panel">
+                <header class="panel-header">
+                    <div class="radar-live-status">
+                        <span class="live-dot-indicator"></span>
+                        <span class="live-text">● LIVE</span>
+                    </div>
+                    <h3 class="panel-title">WEBCAM RADAR</h3>
+                </header>
+                
+                <div class="webcam-feed-wrapper">
+                    <video id="webcam-video" autoplay playsinline muted></video>
+                    <!-- Overlay circular radar canvas -->
+                    <canvas id="radar-canvas"></canvas>
+                    <div id="webcam-loading-msg"><i class="fa-solid fa-circle-notch fa-spin"></i> INITIALIZING RADAR...</div>
+                </div>
+                
+                <footer class="panel-footer">
+                    <div class="radar-telemetry-row">
+                        <span class="radar-label">LOCK:</span>
+                        <span id="radar-lock-status" class="radar-value text-unlocked">UNLOCKED</span>
+                    </div>
+                    <div class="radar-telemetry-row">
+                        <span class="radar-label">SECTOR:</span>
+                        <span id="radar-active-sector" class="radar-value text-neutral">NONE</span>
+                    </div>
+                </footer>
+            </section>
+        </section>
+
+        <!-- ================= Screen C: Taker Stub Message (Locked overlay) ================= -->
+        <div id="taker-locked-modal" class="overlay-modal hidden">
+            <div class="modal-content">
+                <div class="modal-alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <h2 class="modal-title">ACCESS DENIED</h2>
+                <p class="modal-text">
+                    Penalty Taker simulation protocols are currently locked. 
+                    You must complete Goalkeeper tactical training before attacking clearances are unlocked.
+                </p>
+                <button id="taker-locked-close-btn" class="modal-action-btn neon-red-btn">RETURN</button>
+            </div>
+        </div>
+
+        <!-- ================= Game Over Scoreboard Overlay ================= -->
+        <div id="game-over-overlay" class="overlay-modal hidden">
+            <div class="modal-content scoreboard-card">
+                <div class="modal-success-badge"><i class="fa-solid fa-trophy"></i></div>
+                <h1 id="scoreboard-title">SESSION COMPLETE</h1>
+                <p id="scoreboard-feedback" class="scoreboard-eval">RATING: COMMANDING GOALKEEPER</p>
+                
+                <div class="scoreboard-grid">
+                    <div class="score-card">
+                        <span class="score-num" id="final-saves">0</span>
+                        <span class="score-lbl">SAVES</span>
+                    </div>
+                    <div class="score-card">
+                        <span class="score-num" id="final-goals">0</span>
+                        <span class="score-lbl">GOALS</span>
+                    </div>
+                    <div class="score-card">
+                        <span class="score-num" id="final-rate">0%</span>
+                        <span class="score-lbl">EFFICIENCY</span>
+                    </div>
+                </div>
+
+                <div class="high-score-banner hidden" id="hs-banner">
+                    <i class="fa-solid fa-circle-check"></i> NEW TELEMETRY RECORD SET
+                </div>
+
+                <div class="modal-buttons">
+                    <button id="retry-game-btn" class="modal-action-btn neon-green-btn">
+                        <i class="fa-solid fa-rotate-left"></i> RETRY SESSION
+                    </button>
+                    <button id="exit-to-menu-btn" class="modal-action-btn neon-cyan-btn">
+                        <i class="fa-solid fa-house"></i> MAIN MENU
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- Game Engine Scripts -->
+    <script src="script.js"></script>
+</body>
+</html>
