@@ -129,9 +129,16 @@ class SoundSynth {
 const soundSynth = new SoundSynth();
 
 // --- 2. Game Engine States & Configurations ---
+const LEVEL_CONFIGS = {
+    1: { duration: 1300, sectors: ['top-center', 'bottom-center'], curveAmp: 0, curveFreq: 0 },
+    2: { duration: 1100, sectors: ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right'], curveAmp: 0, curveFreq: 0 },
+    3: { duration: 900, sectors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'], curveAmp: 0, curveFreq: 0 },
+    4: { duration: 900, sectors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'], curveAmp: 1.5, curveFreq: 1.5 },
+    5: { duration: 700, sectors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'], curveAmp: 2.5, curveFreq: 3.0 }
+};
+
 const GAME_CONFIG = {
-    totalAttempts: 7,             // Match loop consists strictly of 7 shot attempts
-    ballDuration: 1300,           // ms for floating ball path
+    totalAttempts: Infinity,      // Endless mode
     reboundDuration: 600          // ms for collision bounce animations
 };
 
@@ -139,7 +146,8 @@ const gameState = {
     saves: 0,
     goals: 0,
     attempts: 0,
-    currentDifficulty: 'MEDIUM',
+    currentLevel: 1,
+    currentDifficulty: 'LEVEL 1',
     highScoreSaves: 0,
     highScoreRate: 0,
     
@@ -372,14 +380,14 @@ function initThreeEngine() {
     const h = dom.threeCanvas.clientHeight;
 
     // Renderer
-    renderer = new THREE.WebGLRenderer({ canvas: dom.threeCanvas, antialias: true });
+    renderer = new THREE.WebGLRenderer({ canvas: dom.threeCanvas, antialias: true, alpha: true });
     renderer.setSize(w, h, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
 
     // Scene
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x02040a, 0.018);
+    // Removed fog to allow transparent background for morning theme
 
     // Camera (Third-Person standing behind net looking downfield)
     // Goal line is Z = 12. Goalkeeper sits at Z = 10. Net runs at Z = 12.3.
@@ -389,18 +397,18 @@ function initThreeEngine() {
     camera.lookAt(new THREE.Vector3(0, 1.2, -10));
 
     // Ambient Lighting
-    const ambientLight = new THREE.AmbientLight(0x0e1c36, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffebd6, 0.8);
     scene.add(ambientLight);
 
     // Main stadium directional spot lights
-    const spot1 = new THREE.SpotLight(0x00f0ff, 1.8, 45, Math.PI / 4, 0.5, 1);
+    const spot1 = new THREE.SpotLight(0xffffff, 1.8, 45, Math.PI / 4, 0.5, 1);
     spot1.position.set(-15, 15, -12);
     spot1.target.position.set(0, 0, 8);
     spot1.castShadow = true;
     scene.add(spot1);
     scene.add(spot1.target);
 
-    const spot2 = new THREE.SpotLight(0x22c55e, 1.4, 45, Math.PI / 4, 0.5, 1);
+    const spot2 = new THREE.SpotLight(0xffd700, 1.4, 45, Math.PI / 4, 0.5, 1);
     spot2.position.set(15, 15, -12);
     spot2.target.position.set(0, 0, 8);
     spot2.castShadow = true;
@@ -409,7 +417,7 @@ function initThreeEngine() {
 
     // Dynamic glowing ring lights around the field for futuristic aesthetic
     const stadiumRingGeom = new THREE.RingGeometry(18, 18.3, 32);
-    const stadiumRingMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide, opacity: 0.12, transparent: true });
+    const stadiumRingMat = new THREE.MeshBasicMaterial({ color: 0xffd700, side: THREE.DoubleSide, opacity: 0.12, transparent: true });
     const stadiumRing = new THREE.Mesh(stadiumRingGeom, stadiumRingMat);
     stadiumRing.rotation.x = Math.PI / 2;
     stadiumRing.position.set(0, 0.05, 0);
@@ -440,11 +448,11 @@ function create3DPitch() {
     const pitchLength = 60;
     
     const lawnGeom = new THREE.PlaneGeometry(pitchWidth, pitchLength);
-    // Dark cyber green grid material
+    // Slate Gray pitch material
     const lawnMat = new THREE.MeshPhongMaterial({ 
-        color: 0x040f21, 
-        specular: 0x051d3b,
-        shininess: 20
+        color: 0x475569, 
+        specular: 0x1e293b,
+        shininess: 10
     });
     
     pitchLawn = new THREE.Mesh(lawnGeom, lawnMat);
@@ -454,7 +462,7 @@ function create3DPitch() {
     scene.add(pitchLawn);
 
     // Standard markings (Penalty box, penalty spot, center circles)
-    const lineMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, opacity: 0.25, transparent: true });
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.35, transparent: true });
     
     // Penalty spot circle
     const spotGeom = new THREE.CircleGeometry(0.12, 16);
@@ -482,7 +490,7 @@ function create3DGoalFrame() {
     const goalLineZ = 12.0;
 
     const postGeom = new THREE.CylinderGeometry(postRadius, postRadius, postHeight, 16);
-    const postMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x00f0ff, emissiveIntensity: 0.15 });
+    const postMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.1 });
 
     // Left post
     const leftPost = new THREE.Mesh(postGeom, postMat);
@@ -505,7 +513,7 @@ function create3DGoalFrame() {
     scene.add(crossbar);
 
     // Glow lasers running inside posts
-    const laserMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, linewidth: 2 });
+    const laserMat = new THREE.LineBasicMaterial({ color: 0xffd700, linewidth: 2 });
     const laserGeom = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(-goalWidth / 2, 0, goalLineZ),
         new THREE.Vector3(-goalWidth / 2, postHeight, goalLineZ),
@@ -519,7 +527,7 @@ function create3DGoalFrame() {
     // Runs from crossbar Z = 12.0 to ground Z = 13.5
     const netShape = new THREE.Group();
     const netGridMat = new THREE.MeshBasicMaterial({ 
-        color: 0x00f0ff, 
+        color: 0xffffff, 
         wireframe: true, 
         transparent: true, 
         opacity: 0.15,
@@ -709,11 +717,11 @@ function create3DBall() {
     const ballRadius = 0.22;
     const geom = new THREE.SphereGeometry(ballRadius, 32, 32);
     
-    // Luminous glowing neon cyan football texture
+    // Deep Navy football texture for morning contrast
     const mat = new THREE.MeshPhongMaterial({
-        color: 0x05f0ff,
-        emissive: 0x028c94,
-        emissiveIntensity: 0.5,
+        color: 0x0f172a,
+        emissive: 0x1e293b,
+        emissiveIntensity: 0.3,
         shininess: 50
     });
     
@@ -725,7 +733,7 @@ function create3DBall() {
     // Glowing light halo surrounding ball
     const glowGeom = new THREE.SphereGeometry(ballRadius * 1.5, 16, 16);
     const glowMat = new THREE.MeshBasicMaterial({
-        color: 0x00f0ff,
+        color: 0xffffff,
         transparent: true,
         opacity: 0.22
     });
@@ -738,7 +746,7 @@ function create3DBall() {
         const trailScale = 1.0 - (i / TRAIL_COUNT);
         const trailGeom = new THREE.SphereGeometry(ballRadius * 0.8 * trailScale, 12, 12);
         const trailMat = new THREE.MeshBasicMaterial({
-            color: 0x00f0ff,
+            color: 0xffffff,
             transparent: true,
             opacity: 0.16 * trailScale
         });
@@ -754,7 +762,7 @@ function create3DCollisionParticles() {
     particlePool = [];
     const geom = new THREE.BoxGeometry(0.08, 0.08, 0.08);
     const mat = new THREE.MeshBasicMaterial({
-        color: 0x00f0ff,
+        color: 0xffd700,
         transparent: true,
         opacity: 0.9
     });
@@ -968,7 +976,7 @@ function runRadarAnimationLoop() {
     const rMax = Math.min(w, h) * 0.45;
 
     // Draw circular grid lines
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.2)';
     ctx.lineWidth = 1;
 
     ctx.beginPath();
@@ -995,7 +1003,7 @@ function runRadarAnimationLoop() {
     ctx.stroke();
 
     // Radar divisions
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
     ctx.setLineDash([3, 3]);
     
     // Vertical sectors representation
@@ -1022,7 +1030,7 @@ function runRadarAnimationLoop() {
     const rx = cx + Math.cos(gameState.radarSweepAngle) * rMax;
     const ry = cy + Math.sin(gameState.radarSweepAngle) * rMax;
     
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -1080,9 +1088,13 @@ function startGameFlow() {
     gameState.saves = 0;
     gameState.goals = 0;
     gameState.attempts = 0;
+    gameState.currentLevel = 1;
     gameState.isKicking = false;
     gameState.goalkeeperSector = 'bottom-center';
     
+    document.getElementById('level-hud-badge').textContent = `LEVEL 1`;
+    document.getElementById('tel-val-diff').textContent = `LEVEL 1`;
+
     updateHUDStats();
     resetGoalkeeperJoints();
     
@@ -1126,12 +1138,12 @@ function resetStrikerJoints() {
 function triggerNextAttemptCycle() {
     if (!gameState.gameActive) return;
 
-    // Check if 7 shots completed
-    if (gameState.attempts >= GAME_CONFIG.totalAttempts) {
-        gameState.gameActive = false;
-        setTimeout(endGameSession, 1200);
-        return;
-    }
+    // Check if 7 shots completed - Endless Mode: No attempt limit
+    // if (gameState.attempts >= GAME_CONFIG.totalAttempts) {
+    //     gameState.gameActive = false;
+    //     setTimeout(endGameSession, 1200);
+    //     return;
+    // }
 
     // Hide ball & reset locations
     hideBallAndTrail();
@@ -1234,8 +1246,9 @@ function executeBallPenaltyLaunch() {
     gameState.attempts++;
     updateHUDStats();
 
-    // Pick target goal sector
-    const sectors = ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right'];
+    // Pick target goal sector based on current level
+    const currentLevelConfig = LEVEL_CONFIGS[gameState.currentLevel] || LEVEL_CONFIGS[5];
+    const sectors = currentLevelConfig.sectors;
     gameState.ballTargetSector = sectors[Math.floor(Math.random() * sectors.length)];
 
     // Target 3D coordinates on Goal Plane Z = 12.0
@@ -1276,7 +1289,8 @@ function animate3DBallTrajectory() {
     const endPos = gameState.ballTarget3D;
     
     const startTime = performance.now();
-    const duration = GAME_CONFIG.ballDuration;
+    const currentLevelConfig = LEVEL_CONFIGS[gameState.currentLevel] || LEVEL_CONFIGS[5];
+    const duration = currentLevelConfig.duration;
 
     // Reset trail spheres
     for (let i = 0; i < TRAIL_COUNT; i++) {
@@ -1296,7 +1310,10 @@ function animate3DBallTrajectory() {
         const floatCurveX = Math.sin(t * Math.PI) * gameState.ballWobbleSeedX;
         const floatCurveY = Math.sin(t * Math.PI) * 1.5 + Math.sin(t * Math.PI * 2) * gameState.ballWobbleSeedY;
 
-        const currentX = startPos.x + (endPos.x - startPos.x) * t + floatCurveX;
+        // Apply state machine level curve
+        const curveX = currentLevelConfig.curveAmp * Math.sin(currentLevelConfig.curveFreq * t * Math.PI * 2);
+
+        const currentX = startPos.x + (endPos.x - startPos.x) * t + floatCurveX + curveX;
         const currentY = startPos.y + (endPos.y - startPos.y) * t + floatCurveY;
         const currentZ = startPos.z + (endPos.z - startPos.z) * t;
 
@@ -1408,6 +1425,16 @@ function resolveGoalCollision() {
         targetSectorElem.classList.add('zone-saved');
         soundSynth.playSave();
         triggerActionToast("SAVE!", "toast-save");
+        
+        // Level Progression Logic
+        const newLevel = Math.min(5, Math.floor(gameState.saves / 5) + 1);
+        if (newLevel > gameState.currentLevel) {
+            gameState.currentLevel = newLevel;
+            const levelText = gameState.currentLevel === 5 ? "PRO LEVEL" : `LEVEL ${gameState.currentLevel}`;
+            document.getElementById('level-hud-badge').textContent = levelText;
+            document.getElementById('tel-val-diff').textContent = levelText;
+            triggerActionToast(`${levelText} REACHED!`, "toast-save");
+        }
 
         // Spawns 3D Save particle explosion at ball contact
         triggerSaveParticles(ball3D.position);
@@ -1537,7 +1564,7 @@ function clearGoalSectorGlows() {
 }
 
 function updateHUDStats() {
-    dom.valAttempts.textContent = `${gameState.attempts} / ${GAME_CONFIG.totalAttempts}`;
+    dom.valAttempts.textContent = `${gameState.attempts}`;
     dom.valSaves.textContent = gameState.saves;
 }
 
